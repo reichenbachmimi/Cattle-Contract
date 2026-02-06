@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #C72a09 0%, #a01f07 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background: #C72a09;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            background: #a01f07;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(199, 42, 9, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .recording {
+            background: #ef4444 !important;
+        }
+        
+        .recording:hover {
+            background: #dc2626 !important;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            margin-top: 10px;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #C72a09;
+        }
+        
+        .contract-output {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            margin-top: 10px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            width: 100%;
+            resize: vertical;
+        }
+        
+        .contract-output:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+        
+        .contract-output[readonly] {
+            cursor: default;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .status.listening {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .status.idle {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .api-setup {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .api-setup-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #C72a09;
+        }
+        
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .loading {
+            color: #C72a09;
+            font-style: italic;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐄 Cattle Sales Contract Generator</h1>
+        <p class="subtitle">Speak your cattle sale terms, and AI will create a formatted contract</p>
+        
+        <!-- API Key Setup -->
+        <div class="api-setup">
+            <div class="api-setup-title">⚙️ Setup (Required)</div>
+            <label for="apiKey" style="font-size: 13px; color: #92400e;">
+                Enter your OpenAI API Key:
+                <input type="text" id="apiKey" placeholder="sk-...">
+            </label>
+            <p style="font-size: 12px; color: #92400e; margin-top: 8px;">
+                Get one at <a href="https://platform.openai.com/api-keys" target="_blank" style="color: #92400e; text-decoration: underline;">platform.openai.com</a>
+            </p>
+        </div>
+        
+        <!-- Step 1: Dictation -->
+        <div class="section">
+            <div class="section-title">
+                Step 1: Dictate Your Terms
+                <span class="status idle" id="status">Ready</span>
+            </div>
+            <button id="dictateBtn">🎤 Start Dictation</button>
+            <textarea id="transcription" placeholder="Your spoken words will appear here..."></textarea>
+        </div>
+        
+        <!-- Step 2: Generate Contract -->
+        <div class="section">
+            <div class="section-title">Step 2: Generate Contract</div>
+            <div class="button-group">
+                <button id="generateBtn">✨ Generate Contract</button>
+                <button id="editBtn" style="background: #f59e0b;">✏️ Edit Contract</button>
+                <button id="copyBtn" style="background: #10b981;">📋 Copy Contract</button>
+            </div>
+            <div id="loading" class="loading" style="display: none;">Generating your contract...</div>
+            <div id="error" class="error" style="display: none;"></div>
+            <textarea class="contract-output" id="contract" readonly>Your cattle sales contract will appear here...</textarea>
+        </div>
+    </div>
+
+    <script>
+        // Speech Recognition Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            alert('Sorry, your browser does not support speech recognition. Please use Chrome, Edge, or Safari.');
+        }
+        
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        // DOM Elements
+        const dictateBtn = document.getElementById('dictateBtn');
+        const transcriptionArea = document.getElementById('transcription');
+        const statusBadge = document.getElementById('status');
+        const generateBtn = document.getElementById('generateBtn');
+        const editBtn = document.getElementById('editBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const contractDiv = document.getElementById('contract');
+        const apiKeyInput = document.getElementById('apiKey');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        
+        let isListening = false;
+        let finalTranscript = '';
+        
+        // Dictation Controls
+        dictateBtn.addEventListener('click', () => {
+            if (!isListening) {
+                recognition.start();
+                isListening = true;
+                dictateBtn.textContent = '⏹️ Stop Dictation';
+                dictateBtn.classList.add('recording');
+                statusBadge.textContent = 'Listening...';
+                statusBadge.classList.remove('idle');
+                statusBadge.classList.add('listening');
+            } else {
+                recognition.stop();
+                isListening = false;
+                dictateBtn.textContent = '🎤 Start Dictation';
+                dictateBtn.classList.remove('recording');
+                statusBadge.textContent = 'Ready';
+                statusBadge.classList.remove('listening');
+                statusBadge.classList.add('idle');
+            }
+        });
+        
+        // Handle Speech Recognition Results
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            transcriptionArea.value = finalTranscript + interimTranscript;
+        };
+        
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            isListening = false;
+            dictateBtn.textContent = '🎤 Start Dictation';
+            dictateBtn.classList.remove('recording');
+            statusBadge.textContent = 'Ready';
+            statusBadge.classList.remove('listening');
+            statusBadge.classList.add('idle');
+        };
+        
+        // Generate Contract with AI
+        generateBtn.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            const transcript = transcriptionArea.value.trim();
+            
+            errorDiv.style.display = 'none';
+            
+            if (!apiKey) {
+                errorDiv.textContent = '⚠️ Please enter your OpenAI API key first';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (!transcript) {
+                errorDiv.textContent = '⚠️ Please dictate some terms first';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            loadingDiv.style.display = 'block';
+            generateBtn.disabled = true;
+            contractDiv.textContent = 'Generating...';
+            
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [{
+                            role: 'system',
+                            content: `You are a cattle sales contract assistant. Based on the spoken terms provided, create a contract with EXACTLY this format (extract information from what was said, use "TBD" or reasonable defaults if information is missing):
+
+Line 1: Date: [date in MM/DD/YYYY format - if they say "today" use today's date, if they say a date convert it to MM/DD/YYYY]
+Line 2: Buyer Number: [buyer number if mentioned, otherwise "TBD"]
+Line 3: Seller: [seller name]
+Line 4: Seller Address: [seller address or "TBD"]
+Line 5: Buyer: [buyer name]
+Line 6: Cattle Type: [Heifer/Steer/Bull/Cow/Calf]
+Line 7: Head/Quantity: [number of animals]
+Line 8: Average Weight Per Animal: [weight] lbs
+Line 9: Total Weight: [CALCULATE: Average Weight Per Animal × Head/Quantity - format with commas] lbs
+Line 10: Slide %: [percentage or "TBD"]
+Line 11: Avg/CWT: $[price per hundredweight]
+Line 12: Total Price: $[CALCULATE: (Total Weight ÷ 100) × Avg/CWT - format with commas if over 1000]
+
+IMPORTANT: For Line 9 and Line 12, you MUST calculate these values mathematically. Do not say "TBD" or leave blank.
+For Line 9: multiply the average weight per animal by the number of head. FORMAT WITH COMMAS (e.g., 40,000 not 40000).
+For Line 12: take the total weight, divide by 100, then multiply by the price per CWT. Round to 2 decimal places. FORMAT WITH COMMAS (e.g., $1,234.56).
+
+Keep each line on its own line. Be concise and clear. Today's date is ${new Date().toLocaleDateString('en-US')}.`
+                        }, {
+                            role: 'user',
+                            content: `Create a cattle sales contract based on these spoken terms: "${transcript}"`
+                        }],
+                        temperature: 0.7,
+                        max_tokens: 300
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const contract = data.choices[0].message.content;
+                
+                contractDiv.value = contract;
+                
+                // Reset edit mode if it was active
+                if (isEditing) {
+                    contractDiv.setAttribute('readonly', 'true');
+                    editBtn.textContent = '✏️ Edit Contract';
+                    editBtn.style.background = '#f59e0b';
+                    isEditing = false;
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = `⚠️ Error: ${error.message}. Check your API key and try again.`;
+                errorDiv.style.display = 'block';
+                contractDiv.value = 'Error generating contract. See error message above.';
+            } finally {
+                loadingDiv.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        });
+        
+        // Edit Contract Toggle
+        let isEditing = false;
+        editBtn.addEventListener('click', () => {
+            if (!isEditing) {
+                // Enable editing
+                contractDiv.removeAttribute('readonly');
+                contractDiv.focus();
+                editBtn.textContent = '💾 Save Edits';
+                editBtn.style.background = '#059669';
+                isEditing = true;
+            } else {
+                // Save edits (just make it readonly again)
+                contractDiv.setAttribute('readonly', 'true');
+                editBtn.textContent = '✏️ Edit Contract';
+                editBtn.style.background = '#f59e0b';
+                isEditing = false;
+            }
+        });
+        
+        // Copy Contract to Clipboard
+        copyBtn.addEventListener('click', () => {
+            const contractText = contractDiv.value;
+            
+            if (contractText === 'Your cattle sales contract will appear here...' || 
+                contractText === 'Generating...' ||
+                contractText.includes('Error')) {
+                errorDiv.textContent = '⚠️ No contract to copy yet';
+                errorDiv.style.display = 'block';
+                setTimeout(() => errorDiv.style.display = 'none', 3000);
+                return;
+            }
+            
+            navigator.clipboard.writeText(contractText).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.style.background = '#059669';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = '#10b981';
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
